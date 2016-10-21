@@ -29,10 +29,19 @@
 // #define NOT_GEARED
 // #define ENABLE_3AXES
 
+#define TB6600
 
+#ifdef TB6600
+// TB6600: 16 microsteps
+#define CONFIG_X_STEPS_PER_MM (107.095046843/2) //microsteps/mm
+#define CONFIG_Y_STEPS_PER_MM (109.529025181/2) //microsteps/mm
+#define CONFIG_Z_STEPS_PER_MM 33.33333333 //microsteps/mm
+#else
+// Geckodrive
 #define CONFIG_X_STEPS_PER_MM 88.88888888 //microsteps/mm
 #define CONFIG_Y_STEPS_PER_MM 90.90909090 //microsteps/mm
 #define CONFIG_Z_STEPS_PER_MM 33.33333333 //microsteps/mm
+#endif
 #define CONFIG_PULSE_MICROSECONDS 5
 #define CONFIG_FEEDRATE 8000.0 // in millimeters per minute
 #define CONFIG_SEEKRATE 8000.0
@@ -132,6 +141,11 @@
 // never reach its target. This parameter should always be greater than zero.
 #define MINIMUM_STEPS_PER_MINUTE 1600U // (steps/min) - Integer value only
 // 1600 @ 32step_per_mm = 50mm/min
+
+// How many milliseconds to wait after turning on AUX1
+#define AUX1_ASSIST_ON_DELAY    5000
+// How many milliseconds to wait before turning off AUX1
+#define AUX1_ASSIST_OFF_DELAY   2000
 
 
 #define X_AXIS 0

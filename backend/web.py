@@ -16,16 +16,28 @@ from config import conf
 import driveboard
 import jobimport
 
+from logger import AccessLogger
+from rfidreader import RfidReader
+from card_data import card_data
+
 
 __author__  = 'Stefan Hechenberger <stefan@nortd.com>'
 
 DEBUG = False
 bottle.BaseRequest.MEMFILE_MAX = 1024*1024*100 # max 100Mb files
 
+user_approved = False
+user_admin = False
+current_user = ''
+current_cardid = ''
+shutdown_msg = ''
+
+#### TEST
+user_approved = True
 
 def checkuser(user, pw):
     """Check login credentials, used by auth_basic decorator."""
-    return bool(user in conf['users'] and conf['users'][user] == pw)
+    return user_approved
 
 def checkserial(func):
     """Decorator to call function only when machine connected."""
@@ -108,8 +120,60 @@ def config():
 @bottle.auth_basic(checkuser)
 @checkserial
 def status():
-    return json.dumps(driveboard.status())
+    if args.raspberrypi:
+        powertimer.reset()
+    status = driveboard.status()
+    if args.disable_rfid:
+        return json.dumps(status)
+    card_id = reader.getid()
+    print "Card ID %s" % card_id
+    username = ''
+    global current_cardid
+    if len(card_id) == 0:
+        print "No card inserted"
+        username = 'No card inserted'
+        user_approved = False
+        if current_user != '':
+            logger.log(current_user, 'Card removed')
+        current_user = ''
+    elif len(card_id) == 12:
+        if not card_id in card_data:
+            print "Card not found"
+            username = 'Unknown card'
+            user_approved = False
+            if card_id != current_cardid:
+                logger.log(card_id, 'Unknown card')
+        else:
+            print "Card found"
+            data = card_data[card_id]
+            username = data['name']
+            if data['approved']:
+                user_approved = True
+            else:
+                user_approved = False
+            if data['admin']:
+                user_admin = True
+            else:
+                user_admin = False
+            if current_user == '':
+                logger.log(username, 'Card inserted')
+            current_user = username
+            print "Approved: %s" % user_approved
+        current_cardid = card_id
+    else:
+        print "Bad length: %d" % len(card_id)
+    status['username'] = username
+    global shutdown_msg
+    status['shutdown_msg'] = shutdown_msg
+    shutdown_msg = ''
+    return json.dumps(status)
 
+@bottle.route('/pwroff')
+def poweroff():
+    print "Shutting down..."
+    if args.raspberrypi:
+        GPIO.output(pinExt1, GPIO.HIGH)
+    return ''
 
 @bottle.route('/homing')
 @bottle.auth_basic(checkuser)
@@ -528,6 +592,10 @@ def build(firmware_name=None):
 @bottle.auth_basic(checkuser)
 def flash(firmware=None):
     """Flash firmware to MCU."""
+    global user_approved
+    global user_admin
+    if not user_approved and user_admin:
+        return 'Access denied' #!! JSON
     if firmware is None:
         return_code = driveboard.flash()
     else:
@@ -584,11 +652,14 @@ class Server(threading.Thread):
 S = Server()
 
 
-def start(threaded=True, browser=False, debug=False):
+def start(threaded, args):
     """ Start a bottle web server.
         Derived from WSGIRefServer.run()
         to have control over the main loop.
     """
+    browser = args.browser
+    debug = args.debug
+    
     global DEBUG
     DEBUG = debug
 
@@ -599,10 +670,33 @@ def start(threaded=True, browser=False, debug=False):
             if debug:
                 return wsgiref.simple_server.WSGIRequestHandler.log_request(*args, **kw)
 
+    reader = None
+    if not args.disable_rfid:
+        reader = RfidReader()
+        reader.start()
+
+    powertimer = None
+    if conf['hardware'] == 'raspberrypi':
+        from powertimer import PowerTimer
+        # power off pin
+        pinExt1 = 25
+        GPIO.setup(pinExt1, GPIO.OUT)
+        GPIO.output(pinExt1, GPIO.LOW)
+        powertimer = PowerTimer(pinExt1, warn)
+        powertimer.start()
+        
+    logger = AccessLogger()
+    logger.log('', 'Backend started')
+
+    app = bottle.default_app()
+    app.rfidreader = reader
+    app.logger = logger
+    app.powertimer = powertimer
+    
     S.server = wsgiref.simple_server.make_server(
         conf['network_host'],
         conf['network_port'],
-        bottle.default_app(),
+        app,
         wsgiref.simple_server.WSGIServer,
         FixedHandler
     )

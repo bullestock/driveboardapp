@@ -23,14 +23,19 @@ argparser.add_argument('-u', '--usbhack', dest='usbhack', action='store_true',
                        default=False, help='use usb reset hack (advanced)')
 argparser.add_argument('-b', '--browser', dest='browser', action='store_true',
                        default=False, help='launch interface in browser')
+argparser.add_argument('-r', '--disable_rfid', dest='disable_rfid', action='store_true',
+                       default=False, help='do not use RFID reader')
 args = argparser.parse_args()
 
+# <cardid>: { user: <username>, approved: <bool> }
+card_data = {
+}
 
 print "DriveboardApp " + conf['version']
 conf['usb_reset_hack'] = args.usbhack
 
 # run
-web.start(threaded=args.threaded, browser=args.browser, debug=args.debug)
+web.start(threaded=args.threaded, args=args)
 if args.threaded:
     while 1:
         try:
