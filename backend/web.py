@@ -39,6 +39,10 @@ def checkuser(user, pw):
     """Check login credentials, used by auth_basic decorator."""
     return user_approved
 
+def warn(msg):
+    global shutdown_msg
+    shutdown_msg = msg
+
 def checkserial(func):
     """Decorator to call function only when machine connected."""
     def _decorator(*args, **kwargs):
@@ -678,6 +682,7 @@ def start(threaded, args):
     powertimer = None
     if conf['hardware'] == 'raspberrypi':
         from powertimer import PowerTimer
+        import RPi.GPIO as GPIO
         # power off pin
         pinExt1 = 25
         GPIO.setup(pinExt1, GPIO.OUT)
