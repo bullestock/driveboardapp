@@ -88,7 +88,7 @@ def start():
             # sys.stdout.flush()
 
     S.serverthread = threading.Thread(target=run_server)
-    S.serverthread.deamon = True  # kill thread when main thread exits
+    S.serverthread.daemon = True  # kill thread when main thread exits
     S.serverthread.start()
 
     ### messager thread
