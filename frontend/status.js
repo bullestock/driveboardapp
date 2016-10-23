@@ -32,7 +32,8 @@ function status_init() {
     'feedrate': 0.0,
     'intensity': 0.0,
     'duration': 0.0,
-    'pixelwidth': 0.0
+    'pixelwidth': 0.0,
+    'username': ''
   }
 }
 
@@ -303,5 +304,13 @@ var status_handlers = {
   'feedrate': function (status) {},
   'intensity': function (status) {},
   'duration': function (status) {},
-  'pixelwidth': function (status) {}
+  'pixelwidth': function (status) {},
+  'username': function (status) {
+      console.log('User: '+status.username);
+      if (status.username == '') {
+      $('#username').html('No card inserted')
+    } else {
+      $('#username').html(status.username)
+    }
+  },
 }
