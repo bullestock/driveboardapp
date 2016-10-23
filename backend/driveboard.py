@@ -11,6 +11,7 @@ import itertools
 import serial
 import serial.tools.list_ports
 from config import conf
+from card_data import card_data
 import statserver
 
 
@@ -211,8 +212,10 @@ markers_rx = {
     'j': "INFO_PIXEL_WIDTH",
 }
 
-
-
+user_approved = False
+user_admin = False
+current_user = ''
+current_cardid = ''
 
 SerialLoop = None
 fallback_msg_thread = None
@@ -271,6 +274,7 @@ class SerialLoopClass(threading.Thread):
             'underruns': 0,                 # how many times machine is waiting for serial data
             'stackclear': 999999,           # minimal stack clearance (must stay above 0)
             'progress': 1.0,
+            'username': '',
 
             ### stop conditions
             # indicated when key present
@@ -291,7 +295,6 @@ class SerialLoopClass(threading.Thread):
             'pixelwidth': 0.0
         }
         self._s = copy.deepcopy(self._status)
-
 
     def send_command(self, command):
         self.tx_buffer.append(command)
@@ -448,15 +451,16 @@ class SerialLoopClass(threading.Thread):
                 # in stop mode, print recent transmission, unless stop request
                 if char != ERROR_SERIAL_STOP_REQUEST:
                     recent_chars = self.tx_buffer[max(0,self.tx_pos-128):self.tx_pos]
-                    print "RECENT TX BUFFER:"
-                    for char in recent_chars:
-                        if markers_tx.has_key(char):
-                            print "\t%s" % (markers_tx[char])
-                        elif 127 < ord(char) < 256:
-                            print "\t(data byte)"
-                        else:
-                            print "\t(invalid)"
-                    print "----------------"
+                    if recent_chars:
+                        print "RECENT TX BUFFER:"
+                        for char in recent_chars:
+                            if markers_tx.has_key(char):
+                                print "\t%s" % (markers_tx[char])
+                            elif 127 < ord(char) < 256:
+                                print "\t(data byte)"
+                            else:
+                                print "\t(invalid)"
+                        print "----------------"
                 # stop mode housekeeping
                 self.tx_buffer = []
                 self.tx_pos = 0
@@ -1169,6 +1173,45 @@ def sel_offset_custom():
     with SerialLoop.lock:
         SerialLoop.send_command(CMD_SEL_OFFSET_CUSTOM)
 
+
+def set_card_id(card_id, logger):
+    global user_approved, user_admin, current_user, current_cardid
+    global SerialLoop
+    if len(card_id) == 0:
+        print "No card inserted"
+        username = ''
+        user_approved = False
+        if current_user != '':
+            logger.log(current_user, 'Card removed')
+        current_user = ''
+    elif len(card_id) == 12:
+        if not card_id in card_data:
+            print("Card %s not found" % card_id)
+            username = 'Unknown card'
+            user_approved = False
+            if card_id != current_cardid:
+                logger.log(card_id, 'Unknown card')
+        else:
+            print "Card found"
+            data = card_data[card_id]
+            username = data['name']
+            if data['approved']:
+                user_approved = True
+            else:
+                user_approved = False
+            if data['admin']:
+                user_admin = True
+            else:
+                user_admin = False
+            if current_user == '':
+                logger.log(username, 'Card inserted')
+            current_user = username
+            print "Approved: %s" % user_approved
+            current_cardid = card_id
+    else:
+        print "Bad length: %d" % len(card_id)
+    with SerialLoop.lock:
+        SerialLoop._status['username'] = current_user
 
 
 if __name__ == "__main__":
