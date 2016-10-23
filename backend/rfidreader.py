@@ -1,6 +1,8 @@
 import serial
 import threading
 import time
+import driveboard
+from logger import AccessLogger
 
 class RfidReader(threading.Thread):
     
@@ -13,13 +15,8 @@ class RfidReader(threading.Thread):
             port = serial_port,
             baudrate = 9600,
             timeout = 1.0)
+        print("RFID Reader started")
             
-    def getid(self):
-        self.lock.acquire()
-        id = self.tag_id
-        self.lock.release()
-        return id
-    
     def read_id(self):
         STX = 2
         ETX = 3
@@ -39,12 +36,15 @@ class RfidReader(threading.Thread):
                 b.append(c)
 
     def run(self):
+        logger = AccessLogger()
+        logger.log('', 'Backend started')
         bad_reads = 0
         while True:
             i = self.read_id()
             if len(i) == 12:
                 self.lock.acquire()
                 self.tag_id = i
+                driveboard.set_card_id(self.tag_id, logger)
                 self.lock.release()
                 bad_reads = 0
             else:
@@ -53,6 +53,7 @@ class RfidReader(threading.Thread):
                 # No card found for a while, clear ID
                 self.lock.acquire()
                 self.tag_id = ''
+                driveboard.set_card_id(self.tag_id, logger)
                 self.lock.release()
                 
             time.sleep(1)
