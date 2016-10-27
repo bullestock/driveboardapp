@@ -250,6 +250,13 @@ function controls_ready() {
   })
 
   $("#pwroff_btn").click(function(e){  
+      $('#pwroff_modal').modal('show');
+      return false;
+  });
+
+  $("#really_pwroff_btn").click(function(e){
+    $('#pwroff_modal').modal('hide');
+    $('#off_modal').modal('show');
     request_get({
       url:'/pwroff',
       success: function (data) {
