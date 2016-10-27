@@ -675,11 +675,11 @@ def connect(port=conf['serial_port'], baudrate=conf['baudrate'], server=False):
                 SerialLoop.device.setDTR(True)
                 # for good measure
                 SerialLoop.device.flushOutput()
-            # else:
-            #     reset()
-                # time.sleep(0.5)
-                # SerialLoop.device.flushInput()
-                # SerialLoop.device.flushOutput()
+            else:
+                reset(True)
+                time.sleep(1)
+                SerialLoop.device.flushInput()
+                reset(False)
 
             start = time.time()
             while True:
@@ -766,16 +766,9 @@ def build(firmware_name="DriveboardFirmware"):
     return ret
 
 
-def reset():
+def reset(active):
     import flash
-    reconnect = False
-    if connected():
-        close()
-        reconnect = True
-    flash.reset_atmega()
-    if reconnect:
-        connect()
-
+    flash.set_reset_atmega(active)
 
 def status():
     """Get status."""

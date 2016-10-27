@@ -36,7 +36,7 @@ uint8_t serial_data_available();
 
 void serial_consume_data();
 
-// void printString(const char *s);
+void printString(const char *s);
 // void printPgmString(const char *s);
 // void printInteger(long n);
 // void printIntegerInBase(unsigned long n, unsigned long base);

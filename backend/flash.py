@@ -191,6 +191,16 @@ def reset_atmega():
         print "ERROR: forced reset only possible on beaglebone and raspberrypi"
         raise IOError
 
+def set_reset_atmega(active):
+    if conf['hardware'] == 'raspberrypi':
+        import RPi.GPIO as GPIO
+        GPIO.setmode(GPIO.BCM)  # use chip pin number
+        pinReset = 2
+        GPIO.setup(pinReset, GPIO.OUT)
+        if active:
+            GPIO.output(pinReset, GPIO.LOW)
+        else:
+            GPIO.output(pinReset, GPIO.HIGH)
 
 def usb_reset_hack():
     # Hack to reset usb (possibly linux-only), read flash with avrdude

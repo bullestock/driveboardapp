@@ -315,11 +315,11 @@ inline void serial_consume_data() {
 }
 
 
-// void printString(const char *s) {
-//   while (*s) {
-//     serial_write(*s++);
-//   }
-// }
+void printString(const char *s) {
+  while (*s) {
+    serial_write(*s++);
+  }
+}
 
 // // Print a string stored in PGM-memory
 // void printPgmString(const char *s) {
