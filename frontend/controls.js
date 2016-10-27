@@ -249,7 +249,15 @@ function controls_ready() {
     return false
   })
 
-
+  $("#pwroff_btn").click(function(e){  
+    request_get({
+      url:'/pwroff',
+      success: function (data) {
+          $().uxmessage('notice', "Shutting down")
+      }
+    });
+    return false
+  })
 
   // footer buttons /////////////////////////////////////////////////////////
 

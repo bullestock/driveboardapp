@@ -588,6 +588,13 @@ def reset():
 def hello(name):
     return bottle.template('<b>Hello {{name}}</b>!', name=name)
 
+@bottle.route('/pwroff')
+@checkserial
+def pwroff():
+    driveboard.powertimer.shutdown()
+    return '{}'
+
+
 ###############################################################################
 ###############################################################################
 

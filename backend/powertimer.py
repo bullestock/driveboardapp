@@ -14,7 +14,11 @@ class PowerTimer(threading.Thread):
 
     def reset(self):
         self.idle_count = 0
-        
+
+    def shutdown(self):
+        GPIO.output(self.pin, GPIO.HIGH)
+        time.sleep(60)
+
     def run(self):
         print "PowerTimer start"
         self.idle_count = 0
@@ -32,7 +36,6 @@ class PowerTimer(threading.Thread):
                     self.callback("Shutting down in %d minute%s" % (left, plural))
                     last_left = left
             if self.idle_count > self.MAX_IDLE_TIME:
-                GPIO.output(self.pin, GPIO.HIGH)
-                time.sleep(60)
+                self.shutdown()
                 
         
