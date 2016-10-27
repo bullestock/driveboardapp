@@ -780,6 +780,8 @@ def reset():
 def status():
     """Get status."""
     global SerialLoop
+    if conf['hardware'] == 'raspberrypi':
+        powertimer.reset()
     with SerialLoop.lock:
         stats = copy.deepcopy(SerialLoop._status)
         stats['serial'] = connected()  # make sure serial flag is up-to-date

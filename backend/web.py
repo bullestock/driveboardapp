@@ -127,12 +127,7 @@ def config():
 #@bottle.auth_basic(checkuser)
 @checkserial
 def status():
-    if conf['hardware'] == 'raspberrypi':
-        powertimer.reset()
     status = driveboard.status()
-    global shutdown_msg
-    status['shutdown_msg'] = shutdown_msg
-    shutdown_msg = ''
     return json.dumps(status)
 
 @bottle.route('/pwroff')
