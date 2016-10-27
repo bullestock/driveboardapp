@@ -19,7 +19,7 @@ function request_get(args) {
         }
       },
       401: function() {
-        $().uxmessage('error', "Wrong password/username.")
+        $().uxmessage('error', "No authorized card found.")
       }
     },
     success: function (data) {
@@ -61,7 +61,7 @@ function request_post(args) {
         }
       },
       401: function() {
-        $().uxmessage('error', "Wrong password/username.")
+        $().uxmessage('error', "No authorized card found.")
       }
     },
     success: function (data) {

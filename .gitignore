@@ -2,4 +2,5 @@
 *.pyo
 *.DS_Store
 
-userconfig.py
+backend/userconfig.py
+backend/card_data.py

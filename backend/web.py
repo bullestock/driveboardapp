@@ -16,9 +16,7 @@ from config import conf
 import driveboard
 import jobimport
 
-from logger import AccessLogger
 from rfidreader import RfidReader
-from card_data import card_data
 
 
 __author__  = 'Stefan Hechenberger <stefan@nortd.com>'
@@ -26,18 +24,23 @@ __author__  = 'Stefan Hechenberger <stefan@nortd.com>'
 DEBUG = False
 bottle.BaseRequest.MEMFILE_MAX = 1024*1024*100 # max 100Mb files
 
-user_approved = False
-user_admin = False
-current_user = ''
-current_cardid = ''
 shutdown_msg = ''
-
-#### TEST
-user_approved = True
 
 def checkuser(user, pw):
     """Check login credentials, used by auth_basic decorator."""
-    return user_approved
+    if driveboard.is_user_approved():
+        return True
+    else:
+        bottle.abort(401, "Denied")
+        return False
+
+def checkadminuser(user, pw):
+    """Check login credentials, used by auth_basic decorator."""
+    if driveboard.is_user_admin():
+        return True
+    else:
+        bottle.abort(401, "Denied")
+        return False
 
 def warn(msg):
     global shutdown_msg
@@ -87,7 +90,7 @@ def favicon_handler():
 
 
 @bottle.route('/temp', method='POST')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def temp():
     """Create temp file for downloading."""
     load_request = json.loads(bottle.request.forms.get('load_request'))
@@ -104,7 +107,7 @@ def temp():
 
 
 @bottle.route('/download/<filename>/<dlname>')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def download(filename, dlname):
     print "requesting: " + filename
     return bottle.static_file(filename, root=tempfile.gettempdir(), download=dlname)
@@ -114,59 +117,19 @@ def download(filename, dlname):
 ### LOW-LEVEL
 
 @bottle.route('/config')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def config():
     confcopy = copy.deepcopy(conf)
     del confcopy['users']
     return json.dumps(confcopy)
 
 @bottle.route('/status')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 @checkserial
 def status():
-    if args.raspberrypi:
+    if conf['hardware'] == 'raspberrypi':
         powertimer.reset()
     status = driveboard.status()
-    if args.disable_rfid:
-        return json.dumps(status)
-    card_id = reader.getid()
-    print "Card ID %s" % card_id
-    username = ''
-    global current_cardid
-    if len(card_id) == 0:
-        print "No card inserted"
-        username = 'No card inserted'
-        user_approved = False
-        if current_user != '':
-            logger.log(current_user, 'Card removed')
-        current_user = ''
-    elif len(card_id) == 12:
-        if not card_id in card_data:
-            print "Card not found"
-            username = 'Unknown card'
-            user_approved = False
-            if card_id != current_cardid:
-                logger.log(card_id, 'Unknown card')
-        else:
-            print "Card found"
-            data = card_data[card_id]
-            username = data['name']
-            if data['approved']:
-                user_approved = True
-            else:
-                user_approved = False
-            if data['admin']:
-                user_admin = True
-            else:
-                user_admin = False
-            if current_user == '':
-                logger.log(username, 'Card inserted')
-            current_user = username
-            print "Approved: %s" % user_approved
-        current_cardid = card_id
-    else:
-        print "Bad length: %d" % len(card_id)
-    status['username'] = username
     global shutdown_msg
     status['shutdown_msg'] = shutdown_msg
     shutdown_msg = ''
@@ -175,7 +138,7 @@ def status():
 @bottle.route('/pwroff')
 def poweroff():
     print "Shutting down..."
-    if args.raspberrypi:
+    if conf['hardware'] == 'raspberrypi':
         GPIO.output(pinExt1, GPIO.HIGH)
     return ''
 
@@ -368,7 +331,7 @@ def _unique_name(jobname):
 
 
 @bottle.route('/load', method='POST')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def load():
     """Load a dba, svg, dxf, or gcode job.
 
@@ -411,7 +374,7 @@ def load():
 
 @bottle.route('/listing')
 @bottle.route('/listing/<kind>')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def listing(kind=None):
     """List all queue jobs by name."""
     if kind is None:
@@ -427,7 +390,7 @@ def listing(kind=None):
 
 
 @bottle.route('/get/<jobname>')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def get(jobname='woot'):
     """Get a queue job in .dba format."""
     base, name = os.path.split(_get_path(jobname))
@@ -480,7 +443,7 @@ def clear():
 ### LIBRARY
 
 @bottle.route('/listing_library')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def listing_library():
     """List all library jobs by name."""
     files = _get_sorted('*.dba', library=True, stripext=True)
@@ -488,7 +451,7 @@ def listing_library():
 
 
 @bottle.route('/get_library/<jobname>')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def get_library(jobname):
     """Get a library job in .dba format."""
     base, name = os.path.split(_get_path(jobname, library=True))
@@ -496,7 +459,7 @@ def get_library(jobname):
 
 
 @bottle.route('/load_library/<jobname>')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 def load_library(jobname):
     """Load a library job into the queue."""
     job = _get(jobname, library=True)
@@ -539,7 +502,7 @@ def run_direct():
 
 
 @bottle.route('/pause')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 @checkserial
 def pause():
     """Pause a job gracefully."""
@@ -557,7 +520,7 @@ def unpause():
 
 
 @bottle.route('/stop')
-@bottle.auth_basic(checkuser)
+#@bottle.auth_basic(checkuser)
 @checkserial
 def stop_():
     """Halt machine immediately and purge job."""
@@ -580,7 +543,7 @@ def unstop():
 
 @bottle.route('/build')
 # @bottle.route('/build/<firmware>')
-@bottle.auth_basic(checkuser)
+@bottle.auth_basic(checkadminuser)
 def build(firmware_name=None):
     """Build firmware from firmware/src files."""
     buildname = "DriveboardFirmware_from_src"
@@ -593,7 +556,7 @@ def build(firmware_name=None):
 
 @bottle.route('/flash')
 @bottle.route('/flash/<firmware>')
-@bottle.auth_basic(checkuser)
+@bottle.auth_basic(checkadminuser)
 def flash(firmware=None):
     """Flash firmware to MCU."""
     global user_approved
@@ -674,12 +637,12 @@ def start(threaded, args):
             if debug:
                 return wsgiref.simple_server.WSGIRequestHandler.log_request(*args, **kw)
 
-    reader = None
+    driveboard.reader = None
     if not args.disable_rfid:
-        reader = RfidReader()
-        reader.start()
+        driveboard.reader = RfidReader()
+        driveboard.reader.start()
 
-    powertimer = None
+    driveboard.powertimer = None
     if conf['hardware'] == 'raspberrypi':
         from powertimer import PowerTimer
         import RPi.GPIO as GPIO
@@ -687,16 +650,10 @@ def start(threaded, args):
         pinExt1 = 25
         GPIO.setup(pinExt1, GPIO.OUT)
         GPIO.output(pinExt1, GPIO.LOW)
-        powertimer = PowerTimer(pinExt1, warn)
-        powertimer.start()
+        driveboard.powertimer = PowerTimer(pinExt1, warn)
+        driveboard.powertimer.start()
         
-    logger = AccessLogger()
-    logger.log('', 'Backend started')
-
     app = bottle.default_app()
-    app.rfidreader = reader
-    app.logger = logger
-    app.powertimer = powertimer
     
     S.server = wsgiref.simple_server.make_server(
         conf['network_host'],

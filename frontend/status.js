@@ -120,7 +120,7 @@ function status_set_refresh() {
     }
     // send request to statserver
     status_websocket.send('{"status_every":'+every+'}')
-    // console.log("every: " + every)
+    console.log("every: " + every)
   }
 }
 

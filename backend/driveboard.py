@@ -408,22 +408,22 @@ class SerialLoopClass(threading.Thread):
                 # chr is in [!-@], process flag
                 if char == ERROR_LIMIT_HIT_X1:
                     self._s['stops']['x1'] = True
-                    print "ERROR firmware: limit hit x1"
+                    #print "ERROR firmware: limit hit x1"
                 elif char == ERROR_LIMIT_HIT_X2:
                     self._s['stops']['x2'] = True
-                    print "ERROR firmware: limit hit x2"
+                    #print "ERROR firmware: limit hit x2"
                 elif char == ERROR_LIMIT_HIT_Y1:
                     self._s['stops']['y1'] = True
-                    print "ERROR firmware: limit hit y1"
+                    #print "ERROR firmware: limit hit y1"
                 elif char == ERROR_LIMIT_HIT_Y2:
                     self._s['stops']['y2'] = True
-                    print "ERROR firmware: limit hit y2"
+                    #print "ERROR firmware: limit hit y2"
                 elif char == ERROR_LIMIT_HIT_Z1:
                     self._s['stops']['z1'] = True
-                    print "ERROR firmware: limit hit z1"
+                    #print "ERROR firmware: limit hit z1"
                 elif char == ERROR_LIMIT_HIT_Z2:
                     self._s['stops']['z2'] = True
-                    print "ERROR firmware: limit hit z2"
+                    #print "ERROR firmware: limit hit z2"
                 elif char == ERROR_SERIAL_STOP_REQUEST:
                     self._s['stops']['requested'] = True
                     # print "ERROR firmware: stop request"
@@ -1213,6 +1213,13 @@ def set_card_id(card_id, logger):
     with SerialLoop.lock:
         SerialLoop._status['username'] = current_user
 
+def is_user_approved():
+    global user_approved
+    return user_approved
+
+def is_user_approved():
+    global user_approved, user_admin
+    return user_approved and user_admin
 
 if __name__ == "__main__":
     # run like this to profile: python -m cProfile driveboard.py

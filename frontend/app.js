@@ -85,12 +85,12 @@ $(document).ready(function(){
   window.onfocus = function() {
     app_visibility = true
     status_set_refresh()
-    // console.log("onfocus")
+    console.log("onfocus")
   }
   window.onblur = function() {
     app_visibility = false
     status_set_refresh()
-    // console.log("onblur")
+    console.log("onblur")
   }
 
   // get appconfig from server
@@ -162,7 +162,7 @@ function app_status_connect() {
 
     // handle data
     var data = JSON.parse(e.data)
-    // console.log(data)
+    console.log("status message")
 
     // // show in config modal
     // var html = ''
